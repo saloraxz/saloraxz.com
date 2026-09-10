@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Memory Wall</title>
+    <style>
+        :root {
+            --bg-color: #1a0f0f;
+            /* Container Alpha opacity set to 0.4 */
+            --card-bg: rgba(45, 27, 27, 0.4);
+            --accent: #ff6b6b;
+            --text: #fce4ec;
+            --timer-card-bg: rgba(255, 255, 255, 0.08);
+            --timer-card-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            min-height: 100vh;
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 0;
+            overflow-x: hidden;
+        }
+
+        /* --- Photo Wall --- */
+        .photo-wall {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100%;
+            z-index: 1;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 40px 20px;
+            pointer-events: none;
+            opacity: 0.5; 
+        }
+
+        .polaroid {
+            background: white;
+            padding: 8px 8px 25px 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 130px;
+            height: 160px;
+            border-radius: 2px;
+            position: relative;
+            transform: rotate(var(--r));
+        }
+
+        .polaroid img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            background: #eee;
+            display: block;
+        }
+
+        .polaroid::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle at 30% 30%, #ff8787, #b32d2d);
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            z-index: 2;
+        }
+
+        @media (min-width: 768px) {
+            .polaroid {
+                width: 180px;
+                height: 220px;
+                padding: 10px 10px 35px 10px;
+            }
+            .polaroid img {
+                height: 175px;
+            }
+        }
+
+        /* --- Main Content Card --- */
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            background: var(--card-bg);
+            padding: 2.5rem 1.5rem;
+            border-radius: 25px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(74, 44, 44, 0.6);
+            width: 90%;
+            max-width: 480px;
+            backdrop-filter: blur(20px); /* Increased blur to protect readability over 0.4 transparency */
+            -webkit-backdrop-filter: blur(20px);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container img {
+            max-width: 100%;
+            height: auto;
+            display: inline-block;
+            box-sizing: border-box; /* Ensures padding is calculated internally */
+        }
+
+        h1 { color: var(--accent); margin-top: 0; font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; }
+        .subtitle { color: #d8b4b4; margin-bottom: 2rem; font-size: 1rem; }
+
+        /* --- Time Tracker Grid --- */
+        .tracker-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .tracker-group.small-units {
+            gap: 8px;
+        }
+
+        .time-box {
+            background: var(--timer-card-bg);
+            border: 1px solid var(--timer-card-border);
+            border-radius: 14px;
+            padding: 12px 5px;
+            width: 85px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tracker-group.small-units .time-box {
+            width: 70px;
+            padding: 10px 5px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .time-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .tracker-group.small-units .time-number {
+            font-size: 1.3rem;
+        }
+
+        .time-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #bfa3a3;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        /* --- UI Controls --- */
+        .button {
+            background: var(--accent);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .button:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        }
+
+        .petal {
+            position: fixed;
+            top: -10%;
+            background-color: #ffb7c5;
+            border-radius: 150% 0 150% 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Game Card Elements */
+        .game-card {
+            background: #2d1b1b;
+            border: 2px solid #4a2c2c;
+            border-radius: 10px;
+            height: 75px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .game-card.flipped {
+            background: #ffb7c5;
+            transform: rotateY(180deg);
+        }
+
+        .game-card.matched {
+            background: rgba(255, 107, 107, 0.3);
+            border-color: var(--accent);
+            cursor: default;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.8; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="photo-wall">
+        <div class="polaroid" style="--r: -4deg;"><img src="photo1.jpg" alt="1"></div>
+        <div class="polaroid" style="--r: 5deg;"><img src="photo2.jpg" alt="2"></div>
+        <div class="polaroid" style="--r: -2deg;"><img src="photo3.jpg" alt="3"></div>
+        <div class="polaroid" style="--r: 8deg;"><img src="photo4.jpg" alt="4"></div>
+        <div class="polaroid" style="--r: -6deg;"><img src="photo5.jpg" alt="5"></div>
+        <div class="polaroid" style="--r: 3deg;"><img src="photo6.jpg" alt="6"></div>
+        <div class="polaroid" style="--r: -7deg;"><img src="photo7.jpg" alt="7"></div>
+        <div class="polaroid" style="--r: 4deg;"><img src="photo8.jpg" alt="8"></div>
+        <div class="polaroid" style="--r: -3deg;"><img src="photo9.jpg" alt="9"></div>
+        <div class="polaroid" style="--r: 6deg;"><img src="photo10.jpg" alt="10"></div>
+        <div class="polaroid" style="--r: -5deg;"><img src="photo11.jpg" alt="11"></div>
+        <div class="polaroid" style="--r: 2deg;"><img src="photo12.jpg" alt="12"></div>
+    </div>
+
+    <div class="container">
+        <h1>Time Together</h1>
+        <div class="subtitle">We've been together for</div>
+        
+        <div class="tracker-group">
+            <div class="time-box">
+                <span class="time-number" id="years">00</span>
+                <span class="time-label">Years</span>
+            </div>
+            <div class="time-box">
+                <span class="time-number" id="months">00</span>
+                <span class="time-label">Months</span>
+            </div>
+            <div class="time-box">
+                <span class="time-number" id="days">00</span>
+                <span class="time-label">Days</span>
+            </div>
+        </div>
+
+        <div class="tracker-group small-units">
+            <div class="time-box">
+                <span class="time-number" id="hours">00</span>
+                <span class="time-label">Hours</span>
+            </div>
+            <div class="time-box">
+                <span class="time-number" id="minutes">00</span>
+                <span class="time-label">Minutes</span>
+            </div>
+            <div class="time-box">
+                <span class="time-number" id="seconds">00</span>
+                <span class="time-label">Seconds</span>
+            </div>
+        </div>
+        
+        <button class="button" onclick="spawnSakura()">Make it Rain 🌸</button>
+        <button class="button" onclick="openGame()" style="background: #ff6b6b;">Play a Game 🎮</button>
+
+        <div id="game-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 15, 15, 0.95); z-index: 1000; justify-content: center; align-items: center; flex-direction: column;">
+            <h2 style="color: var(--accent); margin-bottom: 5px;">Our Memory Match</h2>
+            <p style="color: #d8b4b4; margin-bottom: 20px; font-size: 0.9rem;">Match the pairs to reveal a secret message!</p>
+            
+            <div id="game-board" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 320px; width: 90%;"></div>
+            
+            <button class="button" onclick="closeGame()" style="background: #888; margin-top: 20px; padding: 0.5rem 1.5rem; font-size: 0.85rem;">Close Game</button>
+        </div>
+        <br><br>
+        <a href="/" style="color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.8rem;">Back Home</a>
+    </div>
+
+    <script>
+        // --- Password Logic ---
+        const PASSWORD = "watermelon";
+        
+        function checkPassword() {
+            const entry = prompt("Enter the secret word:");
+            if (entry === PASSWORD) {
+                document.body.style.display = "flex";
+            } else {
+                alert("Try again!");
+                window.location.href = "/";
+            }
+        }
+        
+        checkPassword();
+
+        // --- Live Accurate Counting Script ---
+        // CONFIGURATION: Set your anniversary date here! (Year, Month index 0-11, Day, Hour, Minute)
+        // NOTE: Months are 0-indexed in JS (January = 0, February = 1, ..., June = 5, etc.)
+        const anniversaryDate = new Date(2025, 2, 12, 13, 40, 23); 
+
+        function updateTracker() {
+            const now = new Date();
+            
+            let years = now.getFullYear() - anniversaryDate.getFullYear();
+            let months = now.getMonth() - anniversaryDate.getMonth();
+            let days = now.getDate() - anniversaryDate.getDate();
+            
+            let hours = now.getHours() - anniversaryDate.getHours();
+            let minutes = now.getMinutes() - anniversaryDate.getMinutes();
+            let seconds = now.getSeconds() - anniversaryDate.getSeconds();
+
+            if (seconds < 0) {
+                seconds += 60;
+                minutes--;
+            }
+            if (minutes < 0) {
+                minutes += 60;
+                hours--;
+            }
+            if (hours < 0) {
+                hours += 24;
+                days--;
+            }
+            if (days < 0) {
+                const previousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                days += previousMonth.getDate();
+                months--;
+            }
+            if (months < 0) {
+                months += 12;
+                years--;
+            }
+
+            document.getElementById('years').innerText = String(years).padStart(2, '0');
+            document.getElementById('months').innerText = String(months).padStart(2, '0');
+            document.getElementById('days').innerText = String(days).padStart(2, '0');
+            document.getElementById('hours').innerText = String(hours).padStart(2, '0');
+            document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
+        }
+
+        updateTracker();
+        setInterval(updateTracker, 1000);
+
+        // --- Sakura Effect Logic ---
+        function spawnSakura() {
+            for (let i = 0; i < 30; i++) {
+                const petal = document.createElement('div');
+                petal.className = 'petal';
+                const size = Math.random() * 10 + 10 + "px";
+                petal.style.width = size;
+                petal.style.height = size;
+                petal.style.left = Math.random() * 100 + "vw";
+                const duration = Math.random() * 2 + 3 + "s";
+                const delay = Math.random() * 2 + "s";
+                petal.style.animation = `fall ${duration} linear ${delay} forwards`;
+                document.body.appendChild(petal);
+                setTimeout(() => petal.remove(), (parseFloat(duration) + parseFloat(delay)) * 1000);
+            }
+        }
+
+
+        // --- Memory Game Logic ---
+        const gameIcons = ['❤️', '❤️', '🌸', '🌸', '✨', '✨', '🦊', '🦊', '🥂', '🥂', '🧸', '🧸'];
+        let flippedCards = [];
+        let matchedCount = 0;
+        let canFlip = true;
+
+        function openGame() {
+            document.getElementById('game-modal').style.display = 'flex';
+            resetGame();
+        }
+
+        function closeGame() {
+            document.getElementById('game-modal').style.display = 'none';
+        }
+
+        function resetGame() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            flippedCards = [];
+            matchedCount = 0;
+            canFlip = true;
+
+            // Shuffle icons array
+            const shuffled = [...gameIcons].sort(() => Math.random() - 0.5);
+
+            // Create cards dynamically
+            shuffled.forEach((icon, index) => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.dataset.icon = icon;
+                card.dataset.index = index;
+                card.innerText = '❓'; // Default face-down text
+                card.addEventListener('click', handleCardClick);
+                board.appendChild(card);
+            });
+        }
+
+        function handleCardClick(e) {
+            const clickedCard = e.currentTarget;
+
+            // Prevent clicking if animation is running, card is matched, or clicking same card twice
+            if (!canFlip || clickedCard.classList.contains('matched') || flippedCards.includes(clickedCard)) return;
+
+            // Flip card face up
+            clickedCard.classList.add('flipped');
+            clickedCard.innerText = clickedCard.dataset.icon;
+            flippedCards.push(clickedCard);
+
+            if (flippedCards.length === 2) {
+                canFlip = false;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+
+            if (card1.dataset.icon === card2.dataset.icon) {
+                // Match found
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                matchedCount += 2;
+                flippedCards = [];
+                canFlip = true;
+
+                // Check for Win Condition
+                if (matchedCount === gameIcons.length) {
+                    setTimeout(() => {
+                        alert("You won! 🎉 You're the perfect match for me!");
+                        spawnSakura(); // Triggers the petal explosion as a reward
+                    }, 300);
+                }
+            } else {
+                // No match - Flip back over after a short delay
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    card1.innerText = '❓';
+                    card2.innerText = '❓';
+                    flippedCards = [];
+                    canFlip = true;
+                }, 800);
+            }
+        }
+    </script>
+</body>
+</html>

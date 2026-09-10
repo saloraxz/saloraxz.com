@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaio Home Server</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background: #1e1e1e;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+
+        
+            width: 400px;
+            max-width: 90vw;
+            aspect-ratio: 1 / 1;
+        }
+        h1 { color: #00ffa3; margin-bottom: 0.5rem; }
+        p { color: #888; margin-bottom: 2rem; }
+        .links {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .button {
+            background: #333;
+            color: white;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+            border: 1px solid #444;
+            display: inline-block;
+            cursor: pointer;
+            font-size: 1rem;
+
+            /* Fallback color if you don't specify one in the HTML */
+            --hover-color: #00ffa3;
+            --hover-shadow: none;
+        }
+
+        .button:hover {
+            background: var(--hover-color);
+            color: #121212;
+            transform: translateY(-2px);
+            box-shadow: --hover-shadow;            
+        }
+
+        /* Optional helper rule to keep things clean for your special watermelon glow */
+        .button[style*="#ff6b6b"]:hover {
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        }
+        .status {
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #555;
+        }
+        .time {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fedora Vaio</h1>
+        <p>Home Server</p>
+        
+        <div class="links">
+            <a href="/ntfy/" class="button" style="--hover-color: #3DDC84;">Go to ntfy</a>
+            
+            <a id="cockpitBtn" onclick="checkCockpit()" class="button" style="--hover-color: #1e90ff;">Server Admin (Cockpit)</a>
+            <a href="https://saloraxz.github.io" class="button" >Github Pages</a>
+            <a href="/love/" class="button" style="--hover-color: #ff6b6b; --hover-shadow: 0 0 20px rgba(255, 107, 107, 0.5);">Watermelons</a>
+            <a href="/games/" class="button">Games</a>
+            <a href="/csrs/" class="button" style="--hover-color: #e8b23b;">CSRS</a>
+            <a href="/nextcloud/" class="button" style="--hover-color: #1e90ff;">Nextcloud</a>
+        </div>
+        <div class="time">
+            00:00:00
+             <script>
+                function updateTime() {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString();
+                    document.querySelector('.time').textContent = timeString;
+                }
+                setInterval(updateTime, 1000);
+                updateTime(); // Initial call to set immediately
+            </script>
+        </div>
+        <div class="status">
+            Connected via <span class="from"></span><div>Page Version</div><div id="version-footer">v0.0.0</div>
+            <script>
+                // Display the "from" source based on Tailscale, Public Internet, or local access
+                const fromSpan = document.querySelector('.from');
+                if (window.location.hostname === "fedoralap.tail055b0e.ts.net") {
+                    fromSpan.textContent = "Tailscale";
+                } else if (window.location.hostname === "saloraxz.com") {
+                    fromSpan.textContent = "Public Internet";
+                } else if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+                    fromSpan.textContent = "Local Network";
+                } else {
+                    fromSpan.textContent = "Unknown Source";
+                }
+
+                function checkCockpit() {
+                    const btn = document.getElementById('cockpitBtn');
+                    const originalText = btn.innerText;
+                    // We point to the favicon or a small asset Cockpit always has
+                    const pingUrl = "https://fedoralap.tail055b0e.ts.net:9090/static/favicon.ico";
+                    const cockpitUrl = "https://fedoralap.tail055b0e.ts.net:9090";
+
+                    btn.innerText = "Authenticating...";
+                    btn.style.backgroundColor = "#d9534f"; // Red
+                    btn.disabled = true;
+
+                    // Create a dummy image object
+                    const img = new Image();
+    
+                    // If the image "loads" or even throws an error (but didn't timeout), 
+                    // it means the server responded!
+                    const timer = setTimeout(() => {
+                        img.src = ""; // Stop trying
+                        showFailed(btn, originalText);
+                    }, 4000); // 4 second timeout
+
+                    img.onload = () => {
+                        clearTimeout(timer);
+                        window.location.href = cockpitUrl;
+                    };
+
+                    img.onerror = () => {
+                        // With self-signed certs, it will likely hit 'onerror' 
+                        // because the cert is "invalid," but that's enough to prove the server is UP.
+                        clearTimeout(timer);
+                        window.location.href = cockpitUrl;
+                    };
+
+                    img.src = pingUrl + "?t=" + new Date().getTime(); // Anti-cache string
+                }
+
+                function showFailed(btn, originalText) {
+                    btn.innerText = "Failed: Connect to Tailscale";
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.style.backgroundColor = ""; 
+                        btn.disabled = false;
+                    }, 1500);
+                }
+
+                window.addEventListener('pageshow', function(event) {
+                    // This fires every time the page is loaded, 
+                    // including when the back button is used.
+                    const btn = document.getElementById('cockpitBtn');
+                    if (btn) {
+                        btn.innerText = "Server Admin (Cockpit)";
+                        btn.style.backgroundColor = ""; // Resets to CSS default
+                        btn.disabled = false;
+                    }
+                });
+
+                // 1. Fetch Version from version.txt
+                async function loadVersion() {
+                    try {
+                        const response = await fetch('/version.txt');
+                        if (response.ok) {
+                            const version = await response.text();
+                            document.getElementById('version-footer').innerText = 'v' + version.trim();
+                        }
+                    } catch (e) {
+                        console.log("Version file not found");
+                    }
+                }
+                loadVersion();
+            </script>
+        </div>
+    </div>
+</body>
+</html>
